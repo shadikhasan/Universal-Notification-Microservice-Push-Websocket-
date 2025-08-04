@@ -1,132 +1,166 @@
-# Django Backend Template v1.1
+# 📦 Universal Notification Microservice (WebSocket + REST API)
 
-A production-ready Django backend template following best practices. Includes Docker support, PostgreSQL for production, SQLite for development, Celery with Redis, and environment-based settings.
+This project is a **multi-tenant**, real-time **notification microservice** designed to work with any backend or frontend via API.
+
+✅ Built with **Django**, **Django Channels**, **Redis**, and **WebSocket**  
+✅ Ideal for sending **in-app real-time notifications**  
+✅ Lightweight, secure, and extendable
+
+---
+
+## 🚀 Features
+
+- 🔑 API key–based multi-tenant authentication
+- 🌐 Real-time push notifications via WebSocket
+- 📬 Send notifications through a secure REST API
+- 📊 Optional delivery tracking (per user)
+- 🔁 Redis-backed channel layer for high-speed messaging
+- 🔐 Auto-generates API keys for each tenant
+- 🧩 Easy to integrate with any frontend (React, Vue, Flutter, etc.)
+
+---
+
+## 🏗️ Tech Stack
+
+| Layer     | Technology              |
+|-----------|--------------------------|
+| Backend   | Django, Django REST Framework |
+| Realtime  | Django Channels, WebSocket   |
+| Messaging | Redis (Channels Layer)       |
+| DB        | PostgreSQL or SQLite         |
+| Auth      | API Key per tenant           |
 
 ---
 
 ## 📁 Project Structure
 
 ```
-myproject/
-│
-├── core/
-│   ├── __init__.py
-│   ├── settings/
-│   │   ├── __init__.py
-│   │   ├── base.py
-│   │   ├── dev.py
-│   │   └── prod.py
-│   ├── urls.py
-│   ├── wsgi.py
-│   └── celery.py
-│
-├── myapp/
-│   ├── models.py
-│   └── ...
-│
-├── static/
-├── media/
-├── manage.py
-├── requirements.txt
-├── Dockerfile
-├── docker-compose.yml
-├── .env
-└── README.md
+notifications/
+├── models.py         # Tenant, Notification, DeliveryStatus
+├── views.py          # REST API for sending notifications
+├── consumers.py      # WebSocket consumer
+├── routing.py        # WebSocket routes
+├── urls.py           # API routes
+├── serializers.py
+core/
+├── asgi.py           # ASGI entry point
+├── settings.py
 ```
 
 ---
 
-## ⚙️ Features
-
-- Django 4.2+
-- PostgreSQL (prod) / SQLite (dev)
-- Celery with Redis
-- Docker and Docker Compose setup
-- Separate `settings/` for base, development, and production
-- Environment variables with `os.environ`
-- Static and media file support
-
----
-
-## 🚀 Getting Started
-
-### Clone the repository
+## ⚙️ Installation
 
 ```bash
-git clone https://github.com/shadikhasan/Django-Backend-Template.git
-cd Django-Backend-Template
-```
-
-### Create `.env`
-
-Create a `.env` file at the root with the following:
-
-```
-DEBUG=1
-SECRET_KEY=your-secret-key
-
-# Database
-DB_ENGINE=django.db.backends.postgresql
-DB_NAME=postgres
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_HOST=db
-DB_PORT=5432
-
-# Celery
-CELERY_BROKER_URL=redis://redis:6379/0
-CELERY_RESULT_BACKEND=redis://redis:6379/0
-
-# Allowed hosts
-ALLOWED_HOSTS=127.0.0.1,localhost
+git clone https://github.com/shadikhasan/Universal-Notification-Microservice-Push-Websocket-.git
+cd Universal-Notification-Microservice-Push-Websocket-
+python -m venv venv
+source venv/bin/activate  # or venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
 ---
 
-## 🐳 Run with Docker
+## 🧪 Run Services
 
+### 1. Start Redis
 ```bash
-docker-compose up --build
+redis-server
 ```
 
-- App: http://localhost:8000
-- Redis: localhost:6379
-- PostgreSQL: localhost:5432
-
----
-
-## 🧪 Run Migrations & Create Superuser
-
+### 2. Run Django + Daphne
 ```bash
-docker-compose exec web python manage.py migrate
-docker-compose exec web python manage.py createsuperuser
+python manage.py migrate
+python manage.py createsuperuser
+daphne -b 0.0.0.0 -p 8000 core.asgi:application
 ```
 
 ---
 
-## 🏃 Run Celery
+## 🔐 Tenant Setup
 
-```bash
-docker-compose exec celery celery -A core worker --loglevel=info
-docker-compose exec celery-beat celery -A core beat --loglevel=info
+You can create a new tenant via Django admin at:
+```
+http://localhost:8000/admin
+```
+
+Each tenant will have a unique **API Key** auto-generated for them.
+
+---
+
+## 📬 Sending a Notification (REST API)
+
+### URL:
+```
+POST /api/notifications/send/
+```
+
+### Headers:
+```
+Authorization: Api-Key <your-api-key>
+Content-Type: application/json
+```
+
+### Body:
+```json
+{
+  "title": "New Message",
+  "message": "You have a new system alert!",
+  "data": {
+    "type": "alert",
+    "priority": "high"
+  }
+}
+
 ```
 
 ---
 
-## 📂 Requirements Files
+## 📡 WebSocket Client Usage
 
-- `requirements.txt`: Common dependencies
-
----
-
-## 📦 Collect Static Files
-
-```bash
-docker-compose exec web python manage.py collectstatic --noinput
+### URL:
+```
+ws://localhost:8000/ws/notify/?api_key=<your-api-key>
 ```
 
+### JS Example:
+```js
+const socket = new WebSocket("ws://localhost:8000/ws/notify/?api_key=myapp123apikey");
+
+socket.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  console.log("🔔 Notification:", data);
+};
+```
+
+All clients connected to the same tenant will receive the notification in real-time.
+
 ---
 
-## ✨ License
+## 🛡️ Security
 
-MIT License
+- API key must be securely stored
+- WebSocket clients are authenticated using the API key
+- Unauthenticated or deleted tenants are rejected on connect
+
+---
+
+## 🧰 Extensibility
+
+- 🔄 Add email/SMS/FCM integration
+- 📥 Add offline storage or unread status
+- 📈 Add analytics/logging on delivery
+- 👥 Support user-specific channels
+
+---
+
+## 🧑‍💻 Author
+
+**Shadik Hasan**  
+🔗 GitHub: [@shadikhasan](https://github.com/shadikhasan)
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
